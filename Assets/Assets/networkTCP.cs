@@ -14,6 +14,7 @@ public class TCPCommunicator
 
 	public float realtimeRoll = 0;
 	public float realtimePitch = 0;
+	public float realtimeYaw = 0;
 
 	private const string serverDestination = "54.250.127.255";
 	private const int serverPort = 10000;
@@ -99,10 +100,12 @@ public class TCPCommunicator
 				var parsedJSON = JSON.Parse(gotString);
 				var rollReceived = parsedJSON["roll"].AsFloat;
 				var pitchReceived = parsedJSON["pitch"].AsFloat;
+				var yawReceived = parsedJSON["yaw"].AsFloat;
 				var commandReceived = parsedJSON["command"].Value;//parsed as a string
-				Debug.Log("Command::"+commandReceived+",Roll::"+rollReceived+"Pitch::"+pitchReceived);				
+				Debug.Log("Command::"+commandReceived+",Roll::"+rollReceived+"Pitch::"+pitchReceived+",Yaw::"+yawReceived);				
 				realtimeRoll = rollReceived;
 				realtimePitch = pitchReceived;
+				realtimeYaw = yawReceived;
 
 
 			}
@@ -147,7 +150,7 @@ public class networkTCP : MonoBehaviour {
 //				networkTCP speedController = go.GetComponent <networkTCP> ();
 		//transform.Rotate(Time.deltaTime*50, 0, 0);
 		//transform.localEulerAngles = new Vector3(90,30,0);
-		go.transform.eulerAngles = new Vector3(TCPCommunicatorObject.realtimeRoll,0,TCPCommunicatorObject.realtimePitch);
+		go.transform.eulerAngles = new Vector3(TCPCommunicatorObject.realtimeRoll,TCPCommunicatorObject.realtimeYaw,TCPCommunicatorObject.realtimePitch);
 	}
 
 	void OnDestroy () {

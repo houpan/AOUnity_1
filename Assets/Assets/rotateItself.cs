@@ -3,12 +3,16 @@ using System.Collections;
 
 public class rotateItself : MonoBehaviour {
 
+public float roll ;
+public float pitch;
+public float yaw;
 	// Use this for initialization
 	void Start () {
 	}
 	
 	// Update is called once per frame
 	void Update () {
+		transform.eulerAngles = new Vector3(roll*5,yaw*5,pitch*5);
 
 /*
 		GameObject go = GameObject.Find ("Main Camera");
