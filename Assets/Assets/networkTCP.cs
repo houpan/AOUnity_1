@@ -7,28 +7,34 @@ using System.Threading;
 
 public class TCPCommunicator
 {
+	private const string serverDestination = "54.250.127.255";
+	private const int serverPort = 10000;
 
-	TcpClient tcpClient;
-	NetworkStream clientStream;
-	UTF8Encoding encoder;
-	bool waiting = false;
-	bool isAlive = false;
+	private TcpClient tcpClientToServer;
+	private NetworkStream streamToServer;
+	private UTF8Encoding encoder;
+	private bool waiting = false;
+	private bool isAlive = false;
 
+    private volatile bool _shouldStop;
 
     public TCPCommunicator(){
-		tcpClient = new TcpClient(); 
-		tcpClient.Connect("54.250.127.255", 10000);
+		tcpClientToServer = new TcpClient(); 
+		tcpClientToServer.Connect(serverDestination, serverPort);
 
-
-		clientStream = tcpClient.GetStream(); 
+		streamToServer = tcpClientToServer.GetStream(); 
 		byte[] message = new byte[4096];
 		int bytesRead;
 		bytesRead = 0;
-		bytesRead = clientStream.Read(message, 0, 4096);
+		bytesRead = streamToServer.Read(message, 0, 4096);
 
 		encoder = new UTF8Encoding();
 		MonoBehaviour.print(encoder.GetString(message, 0, bytesRead)); 
 
+
+
+
+		//JSON test
         var I = new JSONClass();
         I["version"].AsInt = 5;
         I["author"]["name"] = "Bunny83";
@@ -43,48 +49,51 @@ public class TCPCommunicator
 
         sendMessageToServerUpon(stringfied);
 /*		byte[] outStream = Encoding.UTF8.GetBytes("__"+stringfied);
-		clientStream.Write(outStream, 0, outStream.Length);
-		clientStream.Flush();*/
+		streamToServer.Write(outStream, 0, outStream.Length);
+		streamToServer.Flush();*/
 
 		Debug.Log("sendFirstMessageToServer!");
+
+		//Thread operation
+		_shouldStop = false; 
 
 
     }
 
 	void sendMessageToServerUpon(string stringInput){
 		int bytesRead;
-		byte[] outStream = Encoding.UTF8.GetBytes("__"+stringInput);
-		clientStream.Write(outStream, 0, outStream.Length);
-		clientStream.Flush();		
+		byte[] outStream = Encoding.UTF8.GetBytes("__"+stringInput);//接收的
+		streamToServer.Write(outStream, 0, outStream.Length);
+		streamToServer.Flush();		
 	}
 
 	public void listeningToServerMessage(){
 		byte[] message = new byte[4096];
 		int bytesRead;
 		bytesRead = 0;
+
+		sendMessageToServerUpon("Unity is waiting for msg!");
+		Debug.Log("unity is waiting!");
+
 		while(true){
-			sendMessageToServerUpon("Unity is waiting for msg!");
-			Debug.Log("unity is waiting!");
-			bytesRead = clientStream.Read(message, 0, 4096);
-			clientStream.Flush();
-
-			sendMessageToServerUpon("Unity got your msg!");
-			Debug.Log("unity get!::");
-			MonoBehaviour.print(encoder.GetString(message, 0, bytesRead));	
+			if(streamToServer.DataAvailable){
+				bytesRead = streamToServer.Read(message, 0, 4096);
+				streamToServer.Flush();
+				sendMessageToServerUpon("Unity got your msg!");
+				Debug.Log("unity get!::");
+				MonoBehaviour.print(encoder.GetString(message, 0, bytesRead));	
+			}
+			if(_shouldStop){
+				Debug.Log("thread: stop!");
+				break;
+			}
 		}
-
 	}
 
-    // This method will be called when the thread is started.
-    public void DoWork()
-    {
-    }
     public void RequestStop()
     {
+    	_shouldStop = true;
     }
-    // Volatile is used as hint to the compiler that this data
-    // member will be accessed by multiple threads.
-    private volatile bool _shouldStop;
 }
 
 public class networkTCP : MonoBehaviour {
@@ -111,18 +120,11 @@ public class networkTCP : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 
-/*
-        // Request that the worker thread stop itself:
-        TCPCommunicatorObject.RequestStop();
-
-        // Use the Join method to block the current thread 
-        // until the object's thread terminates.
-        TCPCommunicatorObject.Join();
-		Debug.Log("main thread: Worker thread has terminated.");
-		*/
 	}
 
 	void OnDestroy () {
+		TCPCommunicatorObject.RequestStop();
+        TCPCommunicatorlistenerThread.Join();
 	}
 
 }
