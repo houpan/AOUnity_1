@@ -21,20 +21,25 @@ public class TCPCommunicator
     public TCPCommunicator(){
 		tcpClientToServer = new TcpClient(); 
 		tcpClientToServer.Connect(serverDestination, serverPort);
-
 		streamToServer = tcpClientToServer.GetStream(); 
+		Debug.Log("connectToServer!");
+		encoder = new UTF8Encoding();
+
+
+/*
 		byte[] message = new byte[4096];
 		int bytesRead;
 		bytesRead = 0;
 		bytesRead = streamToServer.Read(message, 0, 4096);
 
-		encoder = new UTF8Encoding();
+
 		MonoBehaviour.print(encoder.GetString(message, 0, bytesRead)); 
+*/
 
 
 
-
-		//JSON test
+		//JSON encoding test
+		/*
         var I = new JSONClass();
         I["version"].AsInt = 5;
         I["author"]["name"] = "Bunny83";
@@ -48,17 +53,15 @@ public class TCPCommunicator
         var stringfied = I.ToString();
 
         sendMessageToServerUpon(stringfied);
-/*		byte[] outStream = Encoding.UTF8.GetBytes("__"+stringfied);
-		streamToServer.Write(outStream, 0, outStream.Length);
-		streamToServer.Flush();*/
+
 
 		Debug.Log("sendFirstMessageToServer!");
-
+*/
 		//Thread operation
 		_shouldStop = false; 
 
-
     }
+
 
 	void sendMessageToServerUpon(string stringInput){
 		int bytesRead;
@@ -70,6 +73,7 @@ public class TCPCommunicator
 	public void listeningToServerMessage(){
 		byte[] message = new byte[4096];
 		int bytesRead;
+
 		bytesRead = 0;
 
 		sendMessageToServerUpon("Unity is waiting for msg!");
@@ -79,9 +83,10 @@ public class TCPCommunicator
 			if(streamToServer.DataAvailable){
 				bytesRead = streamToServer.Read(message, 0, 4096);
 				streamToServer.Flush();
-				sendMessageToServerUpon("Unity got your msg!");
-				Debug.Log("unity get!::");
-				MonoBehaviour.print(encoder.GetString(message, 0, bytesRead));	
+				string gotString = encoder.GetString(message, 0, bytesRead);
+
+				sendMessageToServerUpon("Unity:: Unity got your msg!");
+				Debug.Log("unity get!::"+gotString);
 			}
 			if(_shouldStop){
 				Debug.Log("thread: stop!");
@@ -109,7 +114,8 @@ public class networkTCP : MonoBehaviour {
 
 		TCPCommunicatorlistenerThread = new Thread(TCPCommunicatorObject.listeningToServerMessage);
         TCPCommunicatorlistenerThread.Start();
-        while(!TCPCommunicatorlistenerThread.IsAlive);//讓程式把這個thread開起來候再作事
+
+        while(!TCPCommunicatorlistenerThread.IsAlive);//等程式把這個thread開起來，再做事
 
 
 	}
