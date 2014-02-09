@@ -5,8 +5,16 @@ using System.Text;
 using SimpleJSON;
 using System.Threading;
 
+
+
+
 public class TCPCommunicator
 {
+
+
+	public float realtimeRoll = 0;
+	public float realtimePitch = 0;
+
 	private const string serverDestination = "54.250.127.255";
 	private const int serverPort = 10000;
 
@@ -86,7 +94,17 @@ public class TCPCommunicator
 				string gotString = encoder.GetString(message, 0, bytesRead);
 
 				sendMessageToServerUpon("Unity:: Unity got your msg!");
-				Debug.Log("unity get!::"+gotString);
+				//Debug.Log("unity get!::"+gotString);
+
+				var parsedJSON = JSON.Parse(gotString);
+				var rollReceived = parsedJSON["roll"].AsFloat;
+				var pitchReceived = parsedJSON["pitch"].AsFloat;
+				var commandReceived = parsedJSON["command"].Value;//parsed as a string
+				Debug.Log("Command::"+commandReceived+",Roll::"+rollReceived+"Pitch::"+pitchReceived);				
+				realtimeRoll = rollReceived;
+				realtimePitch = pitchReceived;
+
+
 			}
 			if(_shouldStop){
 				Debug.Log("thread: stop!");
@@ -102,7 +120,6 @@ public class TCPCommunicator
 }
 
 public class networkTCP : MonoBehaviour {
-
 
 
 	TCPCommunicator TCPCommunicatorObject;
@@ -126,6 +143,11 @@ public class networkTCP : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 
+		GameObject go = GameObject.Find ("CubeZfront");
+//				networkTCP speedController = go.GetComponent <networkTCP> ();
+		//transform.Rotate(Time.deltaTime*50, 0, 0);
+		//transform.localEulerAngles = new Vector3(90,30,0);
+		go.transform.eulerAngles = new Vector3(TCPCommunicatorObject.realtimeRoll,0,TCPCommunicatorObject.realtimePitch);
 	}
 
 	void OnDestroy () {
