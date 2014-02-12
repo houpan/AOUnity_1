@@ -15,8 +15,11 @@ public class TCPCommunicator
 	public float realtimeRoll = 0;
 	public float realtimePitch = 0;
 	public float realtimeYaw = 0;
+	public string realtimeCount ;
 
-	private const string serverDestination = "54.250.127.255";
+	//private const string serverDestination = "54.250.127.255";
+	private const string serverDestination = "140.112.30.33";
+	
 	private const int serverPort = 10000;
 
 	private TcpClient tcpClientToServer;
@@ -33,18 +36,6 @@ public class TCPCommunicator
 		streamToServer = tcpClientToServer.GetStream(); 
 		Debug.Log("connectToServer!");
 		encoder = new UTF8Encoding();
-
-
-/*
-		byte[] message = new byte[4096];
-		int bytesRead;
-		bytesRead = 0;
-		bytesRead = streamToServer.Read(message, 0, 4096);
-
-
-		MonoBehaviour.print(encoder.GetString(message, 0, bytesRead)); 
-*/
-
 
 
 		//JSON encoding test
@@ -102,10 +93,17 @@ public class TCPCommunicator
 				var pitchReceived = parsedJSON["pitch"].AsFloat;
 				var yawReceived = parsedJSON["yaw"].AsFloat;
 				var commandReceived = parsedJSON["command"].Value;//parsed as a string
-				//Debug.Log("Command::"+commandReceived+",Roll::"+rollReceived+"Pitch::"+pitchReceived+",Yaw::"+yawReceived);				
+				var countReceived = parsedJSON["overallCount"].Value;//parsed as a string
+				
+				Debug.Log("Command::"+commandReceived+",Roll::"+rollReceived+"Pitch::"+pitchReceived+",Yaw::"+yawReceived+",count::"+countReceived);				
 				realtimeRoll = rollReceived;
 				realtimePitch = pitchReceived;
 				realtimeYaw = yawReceived;
+				realtimeCount = countReceived;
+
+				//GUI.Label(new Rect(Screen.width - 120, 0, 120, 60), TCPCommunicatorObject.realtimeCount.ToString());
+
+
 			}
 			if(_shouldStop){
 				Debug.Log("thread: stop!");
@@ -119,6 +117,8 @@ public class TCPCommunicator
     	_shouldStop = true;
     }
 }
+
+
 
 public class networkTCP : MonoBehaviour {
 
@@ -145,7 +145,6 @@ public class networkTCP : MonoBehaviour {
 
 	// Update is called once per frame
 	void Update () {
-
 		GameObject go = GameObject.Find ("CubeZfront");
 //				networkTCP speedController = go.GetComponent <networkTCP> ();
 		//transform.Rotate(Time.deltaTime*50, 0, 0);
@@ -156,10 +155,10 @@ public class networkTCP : MonoBehaviour {
 			,TCPCommunicatorObject.realtimeRoll - compensationalRow
 			,TCPCommunicatorObject.realtimeYaw - compensationalYaw);
 
-		Debug.Log("PITCH:"+(TCPCommunicatorObject.realtimePitch - compensationalPitch)
+		/*Debug.Log("PITCH:"+(TCPCommunicatorObject.realtimePitch - compensationalPitch)
 			+", ROW:"+(TCPCommunicatorObject.realtimeRoll - compensationalRow)
 			+", YAW:"+(TCPCommunicatorObject.realtimeYaw - compensationalYaw));		
-
+*/
 	    if (Input.GetKey ("r"))
 	    {
 	    	compensationalRow = TCPCommunicatorObject.realtimeRoll;
@@ -167,6 +166,7 @@ public class networkTCP : MonoBehaviour {
 	    	compensationalPitch = TCPCommunicatorObject.realtimePitch;
 			Debug.Log("R pressed");
 	    }
+
 	    
 	}
 
@@ -175,6 +175,24 @@ public class networkTCP : MonoBehaviour {
 		TCPCommunicatorObject.RequestStop();
         TCPCommunicatorlistenerThread.Join();
 
+	}
+	void OnGUI()
+	{
+	    //GUI.Label (new Rect (30, 10, 100, 30), "Salary:");
+		GUI.Label(new Rect(0, 30, 120, 90), "YAYAYAYAAYAY");
+	    //
+	/*   
+	    GUI.Box (Rect (Screen.width/2.0-40,Screen.height/2.0+80,80,20), " "+az);
+	    GUI.Box (Rect (270,Screen.height/2.0-10,80,20),                 " "+ax);
+	   
+	    GUIUtility.RotateAroundPivot(az, Vector2(40, Screen.height/2.0));
+	    GUI.Label (Rect (0,ax-45-356,80,450), meter);
+	    GUI.Label (Rect (0,ax-45,    80,450), meter);
+	    GUI.Label (Rect (0,ax-45+356,80,450), meter);
+	   
+	    GUIUtility.RotateAroundPivot(-az, Vector2(40, Screen.height/2.0)); 
+	    GUI.Box (Rect (0,Screen.height/2.0-40,80,80), "");
+	    */
 	}
 
 }
