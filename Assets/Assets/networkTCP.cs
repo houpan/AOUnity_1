@@ -94,20 +94,18 @@ public class TCPCommunicator
 				streamToServer.Flush();
 				string gotString = encoder.GetString(message, 0, bytesRead);
 
-				sendMessageToServerUpon("Unity:: Unity got your msg!");
-				//Debug.Log("unity get!::"+gotString);
+				//sendMessageToServerUpon("Unity:: Unity got your msg!");
+				///Debug.Log("unity get!::"+gotString);
 
 				var parsedJSON = JSON.Parse(gotString);
 				var rollReceived = parsedJSON["roll"].AsFloat;
 				var pitchReceived = parsedJSON["pitch"].AsFloat;
 				var yawReceived = parsedJSON["yaw"].AsFloat;
 				var commandReceived = parsedJSON["command"].Value;//parsed as a string
-				Debug.Log("Command::"+commandReceived+",Roll::"+rollReceived+"Pitch::"+pitchReceived+",Yaw::"+yawReceived);				
+				//Debug.Log("Command::"+commandReceived+",Roll::"+rollReceived+"Pitch::"+pitchReceived+",Yaw::"+yawReceived);				
 				realtimeRoll = rollReceived;
 				realtimePitch = pitchReceived;
 				realtimeYaw = yawReceived;
-
-
 			}
 			if(_shouldStop){
 				Debug.Log("thread: stop!");
@@ -130,6 +128,7 @@ public class networkTCP : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
+
 		TCPCommunicatorObject = new TCPCommunicator();
 
 		TCPCommunicatorlistenerThread = new Thread(TCPCommunicatorObject.listeningToServerMessage);
@@ -137,10 +136,11 @@ public class networkTCP : MonoBehaviour {
 
         while(!TCPCommunicatorlistenerThread.IsAlive);//等程式把這個thread開起來，再做事
 
-
 	}
 
-
+	private float compensationalRow = 0f;
+	private float compensationalYaw = 0f;
+	private float compensationalPitch = 0f;
 
 
 	// Update is called once per frame
@@ -150,12 +150,31 @@ public class networkTCP : MonoBehaviour {
 //				networkTCP speedController = go.GetComponent <networkTCP> ();
 		//transform.Rotate(Time.deltaTime*50, 0, 0);
 		//transform.localEulerAngles = new Vector3(90,30,0);
-		go.transform.eulerAngles = new Vector3(TCPCommunicatorObject.realtimeRoll,TCPCommunicatorObject.realtimeYaw,TCPCommunicatorObject.realtimePitch);
+
+		go.transform.eulerAngles = new Vector3(
+			TCPCommunicatorObject.realtimePitch - compensationalPitch
+			,TCPCommunicatorObject.realtimeRoll - compensationalRow
+			,TCPCommunicatorObject.realtimeYaw - compensationalYaw);
+
+		Debug.Log("PITCH:"+(TCPCommunicatorObject.realtimePitch - compensationalPitch)
+			+", ROW:"+(TCPCommunicatorObject.realtimeRoll - compensationalRow)
+			+", YAW:"+(TCPCommunicatorObject.realtimeYaw - compensationalYaw));		
+
+	    if (Input.GetKey ("r"))
+	    {
+	    	compensationalRow = TCPCommunicatorObject.realtimeRoll;
+	    	compensationalYaw = TCPCommunicatorObject.realtimeYaw;
+	    	compensationalPitch = TCPCommunicatorObject.realtimePitch;
+			Debug.Log("R pressed");
+	    }
+	    
 	}
 
 	void OnDestroy () {
+
 		TCPCommunicatorObject.RequestStop();
         TCPCommunicatorlistenerThread.Join();
+
 	}
 
 }
