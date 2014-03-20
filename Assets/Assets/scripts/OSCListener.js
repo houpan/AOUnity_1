@@ -7,11 +7,17 @@ private var oscHandler : Osc;
 private var eventName : String = "";
 private var eventData : String = "";
 private var counter : int = 0;
+private var lowpassAlpha : float = 0.4f;
+
+private var yawTemp : float ;
+private var pitchTemp : float ;
+private var rollTemp : float ;
+
 // public var output_txt : GUIText;
 //private var ArrowObj : GameObject;
-private var yawInput : float;
-private var pitchInput : float;
-private var rollInput : float;
+public var yawInput : float;
+public var pitchInput : float;
+public var rollInput : float;
 public var TargetObject : GameObject;
 
 public function Start ()
@@ -39,26 +45,34 @@ function Update () {
 public function updateYPRValue(oscMessage : OscMessage) : void
 {	
 	Debug.Log("Update: " + oscMessage.Values[0] + " , " + oscMessage.Values[1] +","+oscMessage.Values[2]);
-	yawInput = oscMessage.Values[0];
-	pitchInput = oscMessage.Values[1];
-	rollInput = oscMessage.Values[2];
 
-		//transform.eulerAngles = v3Current; 
-		//transform.eulerAngles = new Vector3(pitch,roll,yaw);
-/*		roll = transform.eulerAngles[0];
-		pitch = transform.eulerAngles[1];
-		yaw = transform.eulerAngles[2];
+	yawTemp = oscMessage.Values[0];
+	pitchTemp = oscMessage.Values[1];
+	rollTemp = oscMessage.Values[2];
+	
+	if((yawInput < 0 && yawTemp > 0 )||(yawInput > 0 && yawTemp < 0 )){
+		yawInput = yawTemp;
+	}else{
+		yawInput = yawTemp * lowpassAlpha + (yawInput * (1.0 - lowpassAlpha));		
+	}
 
-
-		GameObject go = GameObject.Find ("Main Camera");
-		networkTCP speedController = go.GetComponent <networkTCP> ();
-		float realtimeRoll = speedController.realtimeRoll;
-		float realtimePitch = speedController.realtimePitch;
-		//transform.Rotate(Time.deltaTime*50, 0, 0);
-		//transform.localEulerAngles = new Vector3(90,30,0);
-		transform.eulerAngles = new Vector3(realtimeRoll,0,realtimePitch);
-//		transform.Rotate(Vector3.right * Time.deltaTime*50);
+	if((pitchInput < 0 && pitchTemp > 0 )||(pitchInput > 0 && pitchTemp < 0 )){
+		pitchInput = pitchTemp;
+	}else{
+		pitchInput = pitchTemp * lowpassAlpha + (pitchInput * (1.0 - lowpassAlpha));		
+	}
+	
+	if((rollInput < 0 && rollTemp > 0 )||(rollInput > 0 && rollTemp < 0 )){
+		rollInput = rollTemp;
+	}else{
+		rollInput = rollTemp * lowpassAlpha + (rollInput * (1.0 - lowpassAlpha));		
+	}
+/*
+	yawInput = oscMessage.Values[0] ;
+	pitchInput = oscMessage.Values[1] ;
+	rollInput = oscMessage.Values[2] ;
 */
+
 
 } 
 public function updateText(oscMessage : OscMessage) : void
