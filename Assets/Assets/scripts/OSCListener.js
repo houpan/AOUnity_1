@@ -44,7 +44,7 @@ function Update () {
 
 public function updateYPRValue(oscMessage : OscMessage) : void
 {	
-	Debug.Log("Update: " + oscMessage.Values[0] + " , " + oscMessage.Values[1] +","+oscMessage.Values[2]);
+/* 	Debug.Log("Update: " + oscMessage.Values[0] + " , " + oscMessage.Values[1] +","+oscMessage.Values[2]); */
 
 	yawTemp = oscMessage.Values[0];
 	pitchTemp = oscMessage.Values[1];
@@ -67,6 +67,9 @@ public function updateYPRValue(oscMessage : OscMessage) : void
 	}else{
 		rollInput = rollTemp * lowpassAlpha + (rollInput * (1.0 - lowpassAlpha));		
 	}
+	
+	
+	
 /*
 	yawInput = oscMessage.Values[0] ;
 	pitchInput = oscMessage.Values[1] ;
