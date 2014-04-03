@@ -45,6 +45,7 @@ public class GameLogic : MonoBehaviour {
 	public List<GameObject> BoundingBoxListTarget;
 
 	public GameObject textCamera;
+	public GameObject evaluateCamera;
 	public GameObject playerCamera;
 	public GameObject targetObject;
 	public GameObject playerObject;
@@ -58,8 +59,8 @@ public class GameLogic : MonoBehaviour {
 	public string note;
 	public int boundingBoxSpecified;//0: as usual,1: AO full, 2:AO simple, 3: AO simple with auxiliary, 4: MO, 5: null
 
-	private double countdownTargetTime;
-	private int isCountdown;
+	private double evaluateTextAppearTargetTime;
+	private int isEvaluateTextAppear;
 	private int countdownFailTimes;
 
 	static public int index = 0;
@@ -70,12 +71,13 @@ public class GameLogic : MonoBehaviour {
 	private recordManager recordManagerObject;
 	private gamestate nowState;
 
+
 	class recordManager{
-		private int userId;//0~5
-		private int userObject;//0,1
+		private int _userId;//0~5
+		private int _userObject;//0,1
 		//0: house
 		//1: missle
-		private int userDevice;//0~4
+		private int _userDevice;//0~4
 //			0.GlobeFish
 //			1.3D ball
 //			2.AO(tactile)
@@ -93,42 +95,49 @@ public class GameLogic : MonoBehaviour {
 		private double taskStartTime;
 		private double countdownTime;
 		private double overallDeviceTime;
+		private double cumulativeError;
 		public recordManager(int userId, int userDevice, int userObject, string note, int isTrainingSession,int boundingBoxSpecified){
 
+			this._userId = userId;
+			this._userObject = userObject;
+			this._userDevice = userDevice;
 
 
 			recordPath = "Records/User_";
 			recordPath += userId;
 			recordPath += (isTrainingSession == 1)? "_training" : "";
-			recordPath += ".txt";
-			
+			recordPath += ".csv";
+
 			
 			if (!File.Exists(recordPath))
 			{
 				File.CreateText(recordPath);
 			}
+			//dataType::: 0:Note
+			//0,The things you have to know,,,,,,,,
+
+			//dataType::: 1: single task
+			//dataType, userId ,Device,object,angleType,elapsed time,overall task elapsed time, errorType,error distance
+			//1,		20,		3,		1,		0,			20.4,			40.3,					1,	,    30 		
+
+			//errorType::: 0: Excellent(under 17), 1: Good (17~30), 2:Not good(30~)
 
 			using (StreamWriter streamWriterObject = File.AppendText(recordPath))
 			{
-				streamWriterObject.WriteLine("[User:"+userId+",Device:"+userDevice+",Object:"+userObject+", BoundingBoxType:"+boundingBoxSpecified+", time:"+System.DateTime.Now+"] :: "+note);
-				streamWriterObject.WriteLine();
+				streamWriterObject.WriteLine("0,[User:"+userId+" - Device:"+userDevice+" - Object:"+userObject+" - BoundingBoxType:"+boundingBoxSpecified+" - time:"+System.DateTime.Now+"] :: "+note+"  ,,,,,,,,");
+				streamWriterObject.WriteLine("dataType, userId ,Device,object,angleType,elapsed time,overall task elapsed time, errorType,error distance");
 			}
 			taskStartTime = Time.time;
 			overallDeviceTime = 0;
+
+			cumulativeError = 0;
 		}
 		public void startTask(GameObject targetObject, GameObject playerObject){
 			taskStartTime = Time.time;
 			using (StreamWriter streamWriterObject = File.AppendText(recordPath))
 			{
 
-				streamWriterObject.WriteLine(TargetRotationType[index]+"");
-				streamWriterObject.WriteLine(""+playerObject.transform.eulerAngles.x+","+playerObject.transform.eulerAngles.y+","+playerObject.transform.eulerAngles.z);
-				streamWriterObject.WriteLine("->");
-				streamWriterObject.WriteLine(""+targetObject.transform.eulerAngles.x+","+targetObject.transform.eulerAngles.y+","+targetObject.transform.eulerAngles.z);
-
-
-				streamWriterObject.WriteLine("");
-//				streamWriterObject.WriteLine("[Task:"+(index-startPoint)+", Type:"+TargetRotationType[index]+" -- Start ]");
+//				streamWriterObject.WriteLine("0,"+TargetRotationType[index]+":::"+playerObject.transform.eulerAngles.x+"-"+playerObject.transform.eulerAngles.y+"-"+playerObject.transform.eulerAngles.z+"  ->  "+targetObject.transform.eulerAngles.x+"-"+targetObject.transform.eulerAngles.y+"-"+targetObject.transform.eulerAngles.z);
 			}
 		}
 		public void startCountdown(){
@@ -143,10 +152,11 @@ public class GameLogic : MonoBehaviour {
 			double currentTime = Time.time; //just overall time....
 			double currentTaskTime = currentTime - taskStartTime;
 			double elapsedTime = currentTime - countdownTime;
+
 			using (StreamWriter streamWriterObject = File.AppendText(recordPath))
 			{
 				if(isSuccess == countdownResult.SUCCEED){
-					streamWriterObject.WriteLine(elapsedTime + "," + currentTaskTime);
+
 //					streamWriterObject.WriteLine("[Task:"+(index-startPoint)+", Type:"+TargetRotationType[index]+" -- Countdown End, Succeed ] "+elapsedTime + " / " + currentTaskTime);
 				}else if(isSuccess == countdownResult.FAILED){
 					streamWriterObject.WriteLine(elapsedTime + "," + currentTaskTime);
@@ -155,31 +165,27 @@ public class GameLogic : MonoBehaviour {
 
 			}
 		}
-		public void endTask(int isSuccess){
+		public void endTask(int errorType, double errorDistance){
+			cumulativeError += errorDistance;
 			double endTime = Time.time;
 			double timeDifference = endTime - taskStartTime;
 			overallDeviceTime += timeDifference;
-			if(isSuccess == 1){
-				using (StreamWriter streamWriterObject = File.AppendText(recordPath))
-				{
-					//				streamWriterObject.WriteLine("[Task:"+(index-startPoint)+", Type:"+TargetRotationType[index]+" -- End ] "+timeDifference);
-					//								streamWriterObject.WriteLine();
-					streamWriterObject.WriteLine();
-					streamWriterObject.WriteLine(""+timeDifference);
-					streamWriterObject.WriteLine();
-					streamWriterObject.WriteLine();
-					streamWriterObject.WriteLine();
-				}
-			}else{
-				using (StreamWriter streamWriterObject = File.AppendText(recordPath))
-				{
-					streamWriterObject.WriteLine();
-					streamWriterObject.WriteLine(""+timeDifference);
-					streamWriterObject.WriteLine("Terminated by supervisor.");
-					streamWriterObject.WriteLine();
-					streamWriterObject.WriteLine();
-				}
+			using (StreamWriter streamWriterObject = File.AppendText(recordPath))
+			{
+				//				streamWriterObject.WriteLine("[Task:"+(index-startPoint)+", Type:"+TargetRotationType[index]+" -- End ] "+timeDifference);
+				//								streamWriterObject.WriteLine();
+
+
+				streamWriterObject.WriteLine("1,"+_userId+","+_userDevice+","+_userObject+","+TargetRotationType[index]+","+timeDifference+","+overallDeviceTime+","+errorType+","+errorDistance);
+				
+				//dataType::: 1: single task
+				//dataType, userId ,Device,object,angleType,elapsed time,overall task elapsed time, errorType,error distance
+				//1,		20,		3,		1,		0,			20.4,			40.3,					1,	,    30 		
+				
+				
 			}
+
+
 
 			
 		}
@@ -188,8 +194,8 @@ public class GameLogic : MonoBehaviour {
 			double timeDifference = endTime - taskStartTime;
 			using (StreamWriter streamWriterObject = File.AppendText(recordPath))
 			{
-				streamWriterObject.WriteLine("[Device Ends At"+System.DateTime.Now+" -- Overall Times ] " + overallDeviceTime);
-				streamWriterObject.WriteLine();
+				streamWriterObject.WriteLine("0,[Device Ends At"+System.DateTime.Now+" -- Overall Times ] " + overallDeviceTime+"[Overall error] "+cumulativeError+"  ,,,,,,,,");
+//				streamWriterObject.WriteLine();
 			}
 			
 		}
@@ -203,6 +209,7 @@ public class GameLogic : MonoBehaviour {
 		setRandomDestination();
 		startPoint = (userId * 120 + userDevice * 24 + userObject * 12  ) % 720;
 		index = startPoint;
+		evaluateCamera.SetActive(false);
 		textCamera.SetActive(false);
 		textCamera.SetActive(true);
 
@@ -242,10 +249,12 @@ public class GameLogic : MonoBehaviour {
 //				BoundingBoxListPlayer[3].SetActive(true);
 //				BoundingBoxListTarget[3].SetActive(true);
 //			}
-		BoundingBoxListPlayer[3].SetActive(true);
-		BoundingBoxListPlayer[4].SetActive(true);
-		BoundingBoxListTarget[3].SetActive(true);
-		BoundingBoxListTarget[4].SetActive(true);
+//		BoundingBoxListPlayer[3].SetActive(true);
+//		BoundingBoxListPlayer[4].SetActive(true);
+//		BoundingBoxListTarget[3].SetActive(true);
+//		BoundingBoxListTarget[4].SetActive(true);
+//			BoundingBoxListPlayer[0].SetActive(true);
+//			BoundingBoxListTarget[0].SetActive(true);
 		}else{ //reassigned
 			switch(boundingBoxSpecified){
 			case 1:
@@ -278,209 +287,113 @@ public class GameLogic : MonoBehaviour {
 				targetObject.transform.Rotate(Vector3.forward, (float)TargetRotation[index].z); 
 
 				textCamera.SetActive(false);
-				isCountdown = 0;
+				isEvaluateTextAppear = 0;
 				nowState = gamestate.Playing;
 				recordManagerObject.startTask(targetObject,playerObject);
-			}
-			else if(nowState == gamestate.Wait)
-			{
 
-				targetObject.transform.rotation = playerObject.transform.rotation;
-				targetObject.transform.Rotate(Vector3.up, (float)TargetRotation[index].x);		
-				targetObject.transform.Rotate(Vector3.right, (float)TargetRotation[index].y);
-				targetObject.transform.Rotate(Vector3.forward, (float)TargetRotation[index].z); 
 
-				index ++;
-
-				textCamera.SetActive(false);
-				Debug.Log("playing");
-
-				nowState = gamestate.Playing;
-				recordManagerObject.startTask(targetObject,playerObject);
-				countdownFailTimes = 0;
 
 			}else if(nowState == gamestate.End)
 			{
 				Debug.Log("Ends");
 				//doing nothing. Closed manually.
-			}
+			}else if(nowState == gamestate.Playing){
 
-		}else if(Input.GetKeyDown(KeyCode.Escape)){//test!
-			if(nowState == gamestate.Playing)
-			{
+				double difference = (eulerAngleXRealigned(targetObject.transform.eulerAngles.x,playerObject.transform.eulerAngles.x))
+									*(eulerAngleXRealigned(targetObject.transform.eulerAngles.x,playerObject.transform.eulerAngles.x))
+									+(eulerAngleXRealigned(targetObject.transform.eulerAngles.y,playerObject.transform.eulerAngles.y))
+						  			*(eulerAngleXRealigned(targetObject.transform.eulerAngles.y,playerObject.transform.eulerAngles.y))
+									+(eulerAngleXRealigned(targetObject.transform.eulerAngles.z,playerObject.transform.eulerAngles.z))
+						  			*(eulerAngleXRealigned(targetObject.transform.eulerAngles.z,playerObject.transform.eulerAngles.z));
+				
+				//			double difference = (targetObject.rotation.eulerAngles.x - playerObject.rotation.eulerAngles.x)
+				//					*(targetObject.rotation.eulerAngles.x - playerObject.rotation.eulerAngles.x)
+				//					+(targetObject.rotation.eulerAngles.y - playerObject.rotation.eulerAngles.y)
+				//					*(targetObject.rotation.eulerAngles.y - playerObject.rotation.eulerAngles.y)
+				//					+(targetObject.rotation.eulerAngles.z - playerObject.rotation.eulerAngles.z)
+				//					*(targetObject.rotation.eulerAngles.z - playerObject.rotation.eulerAngles.z);
+				
+//				Debug.Log(playerObject.transform.eulerAngles.x+","+playerObject.transform.eulerAngles.y+","+playerObject.transform.eulerAngles.z);
+//				Debug.Log(targetObject.transform.eulerAngles.x+","+targetObject.transform.eulerAngles.y+","+targetObject.transform.eulerAngles.z);
+//				Debug.Log(eulerAngleXRealigned(targetObject.transform.eulerAngles.x,playerObject.transform.eulerAngles.x)+","+
+//				          (eulerAngleXRealigned(targetObject.transform.eulerAngles.y,playerObject.transform.eulerAngles.y))+","+
+//				          (eulerAngleXRealigned(targetObject.transform.eulerAngles.z,playerObject.transform.eulerAngles.z)));
 
-				recordManagerObject.endCountdown(countdownResult.SUCCEED);
-				playerCamera.camera.backgroundColor = new Vector4(0.0f, 0.0f, 0.0f, 0);
-				isCountdown = 0;
-				hintComponent.renderer.material = hintList[0];
-				hintComponent.SetActive(false);
 				
-				recordManagerObject.endTask(0);
-				
-				
-				VisibleTextList[0].SetActive(false);
-				VisibleTextList[1].SetActive(false);
-				VisibleTextList[2].SetActive(false);
-				VisibleTextList[3].SetActive(false);
+				difference = Math.Pow(difference,0.5);
+
+				int errorType = -1;
+
+
+				SetListActive(VisibleTextList,false);
+
+				if(difference < 17){
+					errorType = 0;
+					VisibleTextList[4].SetActive(true);
+				}else if(difference >= 17 && difference < 34){
+					errorType = 1;
+					VisibleTextList[5].SetActive(true);
+				}else if(difference >= 34){
+					errorType = 2;
+					VisibleTextList[6].SetActive(true);
+				}
+
+				recordManagerObject.endTask(errorType,difference);
+
 				int overallTaskIndex = index - startPoint;
-				
-				if(overallTaskIndex >= 11){
+
+
+				evaluateCamera.SetActive(true);
+				evaluateTextAppearTargetTime = Time.time + 1;
+				isEvaluateTextAppear = 1;
+
+
+				if((overallTaskIndex+1) >= 12){
 					VisibleTextList[3].SetActive(true);
 					textCamera.SetActive(true);
 					nowState = gamestate.End;
 					recordManagerObject.endDeviceTask();
-				}else{
-					VisibleTextList[2].SetActive(true);
-					textCamera.SetActive(true);
-					nowState = gamestate.Wait;
+
+				}else{//new round
+					index ++;
+					targetObject.transform.rotation = playerObject.transform.rotation;
+					targetObject.transform.Rotate(Vector3.up, (float)TargetRotation[index].x);		
+					targetObject.transform.Rotate(Vector3.right, (float)TargetRotation[index].y);
+					targetObject.transform.Rotate(Vector3.forward, (float)TargetRotation[index].z); 
+
+					recordManagerObject.startTask(targetObject,playerObject);
+
 				}
-
-
-//				hintComponent.renderer.material = hintList[0];
-//				hintComponent.SetActive(false);
-//				
-//				recordManagerObject.endTask();
-//				
-//				
-//				VisibleTextList[0].SetActive(false);
-//				VisibleTextList[1].SetActive(false);
-//				VisibleTextList[2].SetActive(false);
-//				VisibleTextList[3].SetActive(false);
-//				int overallTaskIndex = index - startPoint;
-//				
-//				if(overallTaskIndex >= 6){
-//					VisibleTextList[3].SetActive(true);
-//					textCamera.SetActive(true);
-//					nowState = gamestate.End;
-//					recordManagerObject.endDeviceTask();
-//				}else{
-//					VisibleTextList[2].SetActive(true);
-//					textCamera.SetActive(true);
-//					nowState = gamestate.Wait;
-//				}
 
 
 
 			}
 		}
 
+	
+		Debug.Log(playerObject.transform.eulerAngles.x+","+playerObject.transform.eulerAngles.y+","+playerObject.transform.eulerAngles.z);
 
-		//Diff between the target orientation and the player orientation.
-		if(nowState == gamestate.Playing)
-		{
-			double differenceBoundary = 18;
-			double difference = (targetObject.transform.eulerAngles.x - playerObject.transform.eulerAngles.x)
-							*(targetObject.transform.eulerAngles.x - playerObject.transform.eulerAngles.x)
-							+(targetObject.transform.eulerAngles.y - playerObject.transform.eulerAngles.y)
-							*(targetObject.transform.eulerAngles.y - playerObject.transform.eulerAngles.y)
-							+(targetObject.transform.eulerAngles.z - playerObject.transform.eulerAngles.z)
-							*(targetObject.transform.eulerAngles.z - playerObject.transform.eulerAngles.z);
-
-//			double difference = (targetObject.rotation.eulerAngles.x - playerObject.rotation.eulerAngles.x)
-//					*(targetObject.rotation.eulerAngles.x - playerObject.rotation.eulerAngles.x)
-//					+(targetObject.rotation.eulerAngles.y - playerObject.rotation.eulerAngles.y)
-//					*(targetObject.rotation.eulerAngles.y - playerObject.rotation.eulerAngles.y)
-//					+(targetObject.rotation.eulerAngles.z - playerObject.rotation.eulerAngles.z)
-//					*(targetObject.rotation.eulerAngles.z - playerObject.rotation.eulerAngles.z);
-
-			Debug.Log(playerObject.transform.eulerAngles.x+","+playerObject.transform.eulerAngles.y+","+playerObject.transform.eulerAngles.z);
-
-			difference = Math.Pow(difference,0.5);
-			if(countdownFailTimes >= 3){
-				differenceBoundary = 30;
-			}else if(countdownFailTimes >= 5){
-				differenceBoundary = 50;
-			}else if(countdownFailTimes >= 8){
-				differenceBoundary = 100;
-			}else if(countdownFailTimes >= 10){
-				differenceBoundary = 200;
-			}
-
-//			if()
-
-//			Quaternion targetRotation = targetObject.transform.rotation;
-//			Quaternion playerRotation = playerObject.transform.rotation;
-//
-//			Quaternion relative = Quaternion.Inverse(targetRotation) * playerRotation;
-//			double difference = Math.Pow((relative.eulerAngles.x * relative.eulerAngles.x+
-//			                              relative.eulerAngles.y * relative.eulerAngles.y+
-//			                              relative.eulerAngles.z * relative.eulerAngles.z)
-//			                             ,0.5);
-
-//			Debug.Log(relative);
-
-
-			if ( difference <= differenceBoundary){
-				double timeDifference = 0;
-				Debug.Log("wait");
-				if(isCountdown == 1){// in the countdown progress
-					timeDifference = countdownTargetTime - Time.time ;
-					if(timeDifference<1 && timeDifference>0.75){
-						hintComponent.renderer.material = hintList[0];
-					}else if(timeDifference<0.75 && timeDifference>0.5){
-						hintComponent.renderer.material = hintList[1];
-					}else if(timeDifference<0.5 && timeDifference>0.25 ){
-						hintComponent.renderer.material = hintList[2];
-					}else if(timeDifference<0.25 && timeDifference > 0){
-						hintComponent.renderer.material = hintList[3];
-					}else{// pass!, next state
-
-
-						recordManagerObject.endCountdown(countdownResult.SUCCEED);
-						playerCamera.camera.backgroundColor = new Vector4(0.0f, 0.0f, 0.0f, 0);
-						isCountdown = 0;
-						hintComponent.renderer.material = hintList[0];
-						hintComponent.SetActive(false);
-
-						recordManagerObject.endTask(1);
-
-
-						VisibleTextList[0].SetActive(false);
-						VisibleTextList[1].SetActive(false);
-						VisibleTextList[2].SetActive(false);
-						VisibleTextList[3].SetActive(false);
-						int overallTaskIndex = index - startPoint;
-
-						if(overallTaskIndex >= 12){
-							VisibleTextList[3].SetActive(true);
-							textCamera.SetActive(true);
-							nowState = gamestate.End;
-							recordManagerObject.endDeviceTask();
-						}else{
-							VisibleTextList[2].SetActive(true);
-							textCamera.SetActive(true);
-							nowState = gamestate.Wait;
-						}
-
-					}
-				}else{// start countdown
-
-					countdownTargetTime = Time.time + 1;
-
-					recordManagerObject.startCountdown();
-
-					playerCamera.camera.backgroundColor = new Vector4(0.15f, 0.15f, 0.15f, 0);
-					isCountdown = 1;
-					hintComponent.renderer.material = hintList[0];
-					hintComponent.SetActive(true);
-
-				}
-
-			}else{
-				if(isCountdown == 1){ // failed to end the countdown
-					recordManagerObject.endCountdown(countdownResult.FAILED);
-					playerCamera.camera.backgroundColor = new Vector4(0.0f, 0.0f, 0.0f, 0);
-					isCountdown = 0;
-
-					countdownFailTimes += 1;
-					hintComponent.SetActive(false);
-				}
+		if(isEvaluateTextAppear == 1){// in the text showed process
+			double timeDifference = evaluateTextAppearTargetTime - Time.time ;
+			if(timeDifference <=0){// End text
+				isEvaluateTextAppear = 0;
+				VisibleTextList[4].SetActive(false);
+				VisibleTextList[5].SetActive(false);
+				VisibleTextList[6].SetActive(false);
+				evaluateCamera.SetActive(false);
 			}
 		}
 
 	}
 
-	
+	private double eulerAngleXRealigned(double x1, double x2){
+		if( Math.Abs(x1-x2) > 180){//cross point 0
+			return Math.Abs(360 - Math.Abs(x1-x2));
+		}else{
+			return Math.Abs(x1-x2);
+		}
+	}
+
 	private void setRandomDestination(){
 		TargetRotation = new List<Vector3>();
 		TargetRotationType = new List<int>();
