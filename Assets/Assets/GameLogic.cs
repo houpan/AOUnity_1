@@ -299,28 +299,18 @@ public class GameLogic : MonoBehaviour {
 				//doing nothing. Closed manually.
 			}else if(nowState == gamestate.Playing){
 
-				double difference = (eulerAngleXRealigned(targetObject.transform.eulerAngles.x,playerObject.transform.eulerAngles.x))
-									*(eulerAngleXRealigned(targetObject.transform.eulerAngles.x,playerObject.transform.eulerAngles.x))
-									+(eulerAngleXRealigned(targetObject.transform.eulerAngles.y,playerObject.transform.eulerAngles.y))
-						  			*(eulerAngleXRealigned(targetObject.transform.eulerAngles.y,playerObject.transform.eulerAngles.y))
-									+(eulerAngleXRealigned(targetObject.transform.eulerAngles.z,playerObject.transform.eulerAngles.z))
-						  			*(eulerAngleXRealigned(targetObject.transform.eulerAngles.z,playerObject.transform.eulerAngles.z));
-				
-				//			double difference = (targetObject.rotation.eulerAngles.x - playerObject.rotation.eulerAngles.x)
-				//					*(targetObject.rotation.eulerAngles.x - playerObject.rotation.eulerAngles.x)
-				//					+(targetObject.rotation.eulerAngles.y - playerObject.rotation.eulerAngles.y)
-				//					*(targetObject.rotation.eulerAngles.y - playerObject.rotation.eulerAngles.y)
-				//					+(targetObject.rotation.eulerAngles.z - playerObject.rotation.eulerAngles.z)
-				//					*(targetObject.rotation.eulerAngles.z - playerObject.rotation.eulerAngles.z);
-				
-//				Debug.Log(playerObject.transform.eulerAngles.x+","+playerObject.transform.eulerAngles.y+","+playerObject.transform.eulerAngles.z);
-//				Debug.Log(targetObject.transform.eulerAngles.x+","+targetObject.transform.eulerAngles.y+","+targetObject.transform.eulerAngles.z);
-//				Debug.Log(eulerAngleXRealigned(targetObject.transform.eulerAngles.x,playerObject.transform.eulerAngles.x)+","+
-//				          (eulerAngleXRealigned(targetObject.transform.eulerAngles.y,playerObject.transform.eulerAngles.y))+","+
-//				          (eulerAngleXRealigned(targetObject.transform.eulerAngles.z,playerObject.transform.eulerAngles.z)));
 
-				
-				difference = Math.Pow(difference,0.5);
+//				A old method with bias....
+//				double difference = (eulerAngleXRealigned(targetObject.transform.eulerAngles.x,playerObject.transform.eulerAngles.x))
+//									*(eulerAngleXRealigned(targetObject.transform.eulerAngles.x,playerObject.transform.eulerAngles.x))
+//									+(eulerAngleXRealigned(targetObject.transform.eulerAngles.y,playerObject.transform.eulerAngles.y))
+//						  			*(eulerAngleXRealigned(targetObject.transform.eulerAngles.y,playerObject.transform.eulerAngles.y))
+//									+(eulerAngleXRealigned(targetObject.transform.eulerAngles.z,playerObject.transform.eulerAngles.z))
+//						  			*(eulerAngleXRealigned(targetObject.transform.eulerAngles.z,playerObject.transform.eulerAngles.z));
+//				
+//				difference = Math.Pow(difference,0.5);
+
+				float difference = Quaternion.Angle( targetObject.transform.rotation, playerObject.transform.rotation );
 
 				int errorType = -1;
 
@@ -371,7 +361,7 @@ public class GameLogic : MonoBehaviour {
 		}
 
 	
-		Debug.Log(playerObject.transform.eulerAngles.x+","+playerObject.transform.eulerAngles.y+","+playerObject.transform.eulerAngles.z);
+//		Debug.Log(playerObject.transform.eulerAngles.x+","+playerObject.transform.eulerAngles.y+","+playerObject.transform.eulerAngles.z);
 
 		if(isEvaluateTextAppear == 1){// in the text showed process
 			double timeDifference = evaluateTextAppearTargetTime - Time.time ;
@@ -383,6 +373,48 @@ public class GameLogic : MonoBehaviour {
 				evaluateCamera.SetActive(false);
 			}
 		}
+		{//test
+			float angle = Quaternion.Angle( targetObject.transform.rotation, playerObject.transform.rotation );
+			
+			
+			// get a "forward vector" for each rotation
+			Vector3 forwardA = targetObject.transform.rotation * Vector3.forward;
+			Vector3 forwardB = playerObject.transform.rotation * Vector3.forward;
+			
+			// get a numeric angle for each vector, on the X-Z plane (relative to world forward)
+			float angleA = Mathf.Atan2(forwardA.x, forwardA.z) * Mathf.Rad2Deg;
+			float angleB = Mathf.Atan2(forwardB.x, forwardB.z) * Mathf.Rad2Deg;
+			
+			// get the signed difference in these angles
+			float angleDiff = Mathf.DeltaAngle( angleA, angleB );
+			
+			Debug.Log(""+angle);
+
+
+		}
+
+//		{
+//		
+//		double difference = (eulerAngleXRealigned(targetObject.transform.eulerAngles.x,playerObject.transform.eulerAngles.x))
+//			*(eulerAngleXRealigned(targetObject.transform.eulerAngles.x,playerObject.transform.eulerAngles.x))
+//				+(eulerAngleXRealigned(targetObject.transform.eulerAngles.y,playerObject.transform.eulerAngles.y))
+//				*(eulerAngleXRealigned(targetObject.transform.eulerAngles.y,playerObject.transform.eulerAngles.y))
+//				+(eulerAngleXRealigned(targetObject.transform.eulerAngles.z,playerObject.transform.eulerAngles.z))
+//				*(eulerAngleXRealigned(targetObject.transform.eulerAngles.z,playerObject.transform.eulerAngles.z));
+//		
+//		//			double difference = (targetObject.rotation.eulerAngles.x - playerObject.rotation.eulerAngles.x)
+//		//					*(targetObject.rotation.eulerAngles.x - playerObject.rotation.eulerAngles.x)
+//		//					+(targetObject.rotation.eulerAngles.y - playerObject.rotation.eulerAngles.y)
+//		//					*(targetObject.rotation.eulerAngles.y - playerObject.rotation.eulerAngles.y)
+//		//					+(targetObject.rotation.eulerAngles.z - playerObject.rotation.eulerAngles.z)
+//		//					*(targetObject.rotation.eulerAngles.z - playerObject.rotation.eulerAngles.z);
+//		
+//		
+//		
+//		difference = Math.Pow(difference,0.5);
+//
+//			Debug.Log(difference);
+//		}
 
 	}
 
