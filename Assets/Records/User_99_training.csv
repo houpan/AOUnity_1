@@ -3,3 +3,5 @@ dataType, userId ,Device,object,angleType,elapsed time,overall task elapsed time
 1,99,1,0,3,5.07220983505249,5.07220983505249,0,9.85416507720947
 1,99,1,0,3,3.56278228759766,8.63499212265015,1,23.8955917358398
 1,99,1,0,3,6.13800239562988,14.77299451828,0,7.74028730392456
+0,[User:99 - Device:1 - Object:0 - BoundingBoxType:0 - time:04/10/2014 11:15:31] :: -  ,,,,,,,,
+dataType, userId ,Device,object,angleType,elapsed time,overall task elapsed time, errorType,error distance
